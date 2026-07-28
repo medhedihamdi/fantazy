@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premier League Fixture Analysis - Compare Teams</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: #ffd700; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.9em; }
+        
+        .flex { display: flex; gap: 25px; flex-wrap: wrap; }
+        .sidebar { flex: 0 0 250px; background: #16213e; border-radius: 12px; padding: 15px; max-height: 80vh; overflow-y: auto; }
+        .sidebar h3 { color: #ffd700; margin-bottom: 10px; font-size: 1em; }
+        .team-btn { display: block; width: 100%; background: #1a1a40; border: none; color: #ccc; padding: 8px 12px; margin: 3px 0; border-radius: 6px; cursor: pointer; text-align: left; font-size: 0.9em; transition: 0.3s; }
+        .team-btn:hover { background: #2a2a5a; color: #fff; }
+        .team-btn.active1 { background: #e94560; color: #fff; font-weight: bold; border: 2px solid #ff6b6b; }
+        .team-btn.active2 { background: #2196F3; color: #fff; font-weight: bold; border: 2px solid #64b5f6; }
+        .team-btn .lv { font-size: 0.6em; background: #333; padding: 1px 8px; border-radius: 10px; margin-right: 6px; }
+        
+        .content { flex: 1; background: #16213e; border-radius: 12px; padding: 20px; min-width: 600px; }
+        .placeholder { text-align: center; padding: 60px 20px; color: #666; }
+        .placeholder .big { font-size: 4em; display: block; }
+        
+        .selection-bar { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; padding: 10px 15px; background: #1a1a40; border-radius: 10px; }
+        .selection-bar label { color: #888; font-size: 0.85em; }
+        .selection-bar .team1-label { color: #e94560; font-weight: bold; }
+        .selection-bar .team2-label { color: #2196F3; font-weight: bold; }
+        .selection-bar .selected { padding: 4px 14px; border-radius: 15px; font-weight: bold; cursor: pointer; }
+        .selected.team1 { background: #e94560; color: #fff; }
+        .selected.team2 { background: #2196F3; color: #fff; }
+        .selected.team1:hover { opacity: 0.7; }
+        .selected.team2:hover { opacity: 0.7; }
+        .selected.empty { background: #333; color: #888; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th { background: #1a1a40; color: #ffd700; padding: 8px; text-align: center; border-bottom: 2px solid #e94560; }
+        td { padding: 7px; text-align: center; border-bottom: 1px solid #2a2a5a; }
+        tr:hover td { background: #1a1a40; }
+        tr.conflict { background: #2a1a1a; }
+        tr.conflict td { border-bottom: 2px solid #e94560; }
+        .home { color: #2ecc71; }
+        .away { color: #e74c3c; }
+        .diff { display: inline-block; padding: 2px 10px; border-radius: 15px; font-weight: bold; font-size: 0.8em; min-width: 28px; }
+        .diff-high { background: #c0392b; color: #fff; }
+        .diff-mid { background: #e67e22; color: #fff; }
+        .diff-low { background: #27ae60; color: #fff; }
+        .diff-easy { background: #2980b9; color: #fff; }
+        .round-badge { background: #2a2a5a; padding: 2px 10px; border-radius: 10px; font-size: 0.75em; }
+        
+        .diff-cell { display: flex; gap: 8px; justify-content: center; align-items: center; }
+        .diff-team1 { border: 2px solid #e94560; }
+        .diff-team2 { border: 2px solid #2196F3; }
+        
+        .summary { margin-top: 15px; background: #1a1a40; padding: 12px 18px; border-radius: 8px; border-right: 4px solid #ffd700; }
+        .summary .big-num { font-size: 1.3em; color: #ffd700; font-weight: bold; }
+        .summary .t1 { color: #e94560; }
+        .summary .t2 { color: #2196F3; }
+        .integration-box { margin-top: 10px; padding: 10px 15px; border-radius: 8px; background: #0f0f23; }
+        .integration-box .score { font-size: 1.5em; font-weight: bold; }
+        .integration-box .excellent { color: #2ecc71; }
+        .integration-box .good { color: #ffd700; }
+        .integration-box .poor { color: #e74c3c; }
+        
+        .conflict-list { margin-top: 10px; padding: 10px 15px; border-radius: 8px; background: #2a1a1a; border: 1px solid #e94560; }
+        .conflict-list .conflict-item { display: inline-block; background: #e94560; color: #fff; padding: 2px 12px; border-radius: 12px; margin: 3px 5px; font-size: 0.85em; }
+        .conflict-list .no-conflict { color: #2ecc71; }
+        
+        .stats-box { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px; }
+        .stats-box .team-stats { flex: 1; background: #1a1a40; padding: 10px 15px; border-radius: 8px; min-width: 200px; }
+        .stats-box .team-stats h3 { font-size: 1em; }
+        .stats-box .team-stats .level-info { font-size: 0.8em; color: #888; }
+        .stats-box .team-stats .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px; font-size: 0.9em; }
+        .stats-box .team-stats .stat-row span { background: #0f0f23; padding: 2px 10px; border-radius: 12px; }
+        
+        @media (max-width: 750px) { .sidebar { flex: 1 1 100%; max-height: 200px; } .content { min-width: unset; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚽ Premier League Fixture Analysis</h1>
+        <p class="subtitle">Compare Two Teams - First Half Only 2026/27</p>
+        
+        <div class="flex">
+            <div class="sidebar" id="sidebar">
+                <h3>🏷️ Teams</h3>
+                <div style="font-size:0.7em;color:#888;margin-bottom:5px;">
+                    Click to select/deselect teams<br>
+                    <span style="color:#e94560;">🔴 Team 1</span> | <span style="color:#2196F3;">🔵 Team 2</span>
+                </div>
+                <div id="teamList"></div>
+                <div style="margin-top:10px;font-size:0.6em;color:#555;border-top:1px solid #2a2a5a;padding-top:8px;">
+                    <span style="color:#c0392b;">●</span>L1 <span style="color:#e67e22;">●</span>L2 <span style="color:#2980b9;">●</span>L3 
+                    <span style="color:#27ae60;">●</span>L4 <span style="color:#8e44ad;">●</span>L5 <span style="color:#7f8c8d;">●</span>L6
+                </div>
+                <div style="margin-top:10px;">
+                    <button onclick="resetSelection()" style="background:#2a2a5a;border:none;color:#fff;padding:5px 15px;border-radius:6px;cursor:pointer;width:100%;">Reset Selection</button>
+                </div>
+            </div>
+            <div class="content" id="content">
+                <div class="placeholder">
+                    <span class="big">👆</span>
+                    Select two teams from the list<br>
+                    <span style="color:#e94560;">🔴 Click = Team 1</span><br>
+                    <span style="color:#2196F3;">🔵 Click again = Team 2</span><br>
+                    <span style="color:#888;">Click selected team to deselect</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // Load JSON files
+        // ============================================================
+        async function loadData() {
+            const [gwRes, levelsRes] = await Promise.all([
+                fetch('gw.json'),
+                fetch('levels.json')
+            ]);
+            return {
+                gw: await gwRes.json(),
+                levels: await levelsRes.json()
+            };
+        }
+
+        // ============================================================
+        // Difficulty Algorithm
+        // ============================================================
+        function getDifficulty(opponentLevel, isHome) {
+            let points = 0;
+            if (opponentLevel === 1) points = 6;
+            else if (opponentLevel === 2) points = 3;
+            else if (opponentLevel === 3) points = 1;
+            if (!isHome) points += 2;
+            return points;
+        }
+
+        // ============================================================
+        // State
+        // ============================================================
+        let selectedTeam1 = null;
+        let selectedTeam2 = null;
+        let teams = [];
+        let firstHalf = [];
+        let teamLevel = {};
+        let levelsData = null;
+
+        // ============================================================
+        // Run App
+        // ============================================================
+        loadData().then(({ gw, levels }) => {
+            levelsData = levels;
+            
+            levels.levels.forEach(l => {
+                l.teams.forEach(t => { teamLevel[t] = l.level; });
+            });
+
+            firstHalf = gw.matchweeks.filter(r => r.round <= 19);
+            teams = [...new Set(firstHalf.flatMap(r => r.matches.flatMap(m => [m.home, m.away])))].sort();
+
+            renderTeamList();
+        });
+
+        function renderTeamList() {
+            const listDiv = document.getElementById('teamList');
+            listDiv.innerHTML = '';
+            teams.forEach(t => {
+                const lv = teamLevel[t] || '?';
+                const btn = document.createElement('button');
+                btn.className = 'team-btn';
+                btn.id = `btn-${t.replace(/\s/g, '')}`;
+                btn.innerHTML = `<span class="lv">${lv}</span> ${t}`;
+                
+                if (selectedTeam1 === t) btn.classList.add('active1');
+                if (selectedTeam2 === t) btn.classList.add('active2');
+                
+                btn.onclick = () => handleTeamClick(t);
+                listDiv.appendChild(btn);
+            });
+        }
+
+        function updateButtons() {
+            document.querySelectorAll('.team-btn').forEach(b => {
+                b.classList.remove('active1', 'active2');
+                const name = b.textContent.replace(/^\d+\s+/, '').trim();
+                if (selectedTeam1 === name) b.classList.add('active1');
+                if (selectedTeam2 === name) b.classList.add('active2');
+            });
+            updateSelectionBar();
+        }
+
+        function updateSelectionBar() {
+            const bar = document.querySelector('.selection-bar');
+            if (!bar) return;
+            const t1span = bar.querySelector('.team1');
+            const t2span = bar.querySelector('.team2');
+            if (t1span) {
+                t1span.textContent = selectedTeam1 || 'None';
+                t1span.className = `selected team1 ${selectedTeam1 ? '' : 'empty'}`;
+            }
+            if (t2span) {
+                t2span.textContent = selectedTeam2 || 'None';
+                t2span.className = `selected team2 ${selectedTeam2 ? '' : 'empty'}`;
+            }
+        }
+
+        function handleTeamClick(teamName) {
+            // If clicking on Team 1, deselect it
+            if (selectedTeam1 === teamName) {
+                selectedTeam1 = null;
+                if (selectedTeam2 !== null) {
+                    selectedTeam1 = selectedTeam2;
+                    selectedTeam2 = null;
+                }
+                updateButtons();
+                renderComparison();
+                return;
+            }
+            
+            // If clicking on Team 2, deselect it
+            if (selectedTeam2 === teamName) {
+                selectedTeam2 = null;
+                updateButtons();
+                renderComparison();
+                return;
+            }
+            
+            // If Team 1 is empty, assign to Team 1
+            if (selectedTeam1 === null) {
+                selectedTeam1 = teamName;
+                updateButtons();
+                renderComparison();
+                return;
+            }
+            
+            // If Team 2 is empty, assign to Team 2
+            if (selectedTeam2 === null) {
+                selectedTeam2 = teamName;
+                updateButtons();
+                renderComparison();
+                return;
+            }
+            
+            // Both are filled, replace Team 2
+            selectedTeam2 = teamName;
+            updateButtons();
+            renderComparison();
+        }
+
+        function resetSelection() {
+            selectedTeam1 = null;
+            selectedTeam2 = null;
+            updateButtons();
+            renderComparison();
+        }
+
+        // ============================================================
+        // Render Comparison
+        // ============================================================
+        function renderComparison() {
+            const content = document.getElementById('content');
+            
+            if (selectedTeam1 === null && selectedTeam2 === null) {
+                content.innerHTML = `
+                    <div class="placeholder">
+                        <span class="big">👆</span>
+                        Select two teams from the list<br>
+                        <span style="color:#e94560;">🔴 Click = Team 1</span><br>
+                        <span style="color:#2196F3;">🔵 Click again = Team 2</span><br>
+                        <span style="color:#888;">Click selected team to deselect</span>
+                    </div>
+                `;
+                return;
+            }
+
+            const team1Matches = getTeamMatches(selectedTeam1);
+            const team2Matches = getTeamMatches(selectedTeam2);
+
+            const allRounds = new Set([...team1Matches.keys(), ...team2Matches.keys()]);
+            const merged = [];
+            const conflicts = [];
+            
+            allRounds.forEach(round => {
+                const m1 = team1Matches.get(round) || null;
+                const m2 = team2Matches.get(round) || null;
+                
+                // CONFLICT: BOTH teams have difficulty >= 3
+                const isConflict = m1 && m2 && m1.difficulty >= 3 && m2.difficulty >= 3;
+                
+                merged.push({ round, team1: m1, team2: m2, isConflict });
+                if (isConflict) conflicts.push(round);
+            });
+            merged.sort((a, b) => a.round - b.round);
+
+            // Stats
+            const t1Total = team1Matches.size;
+            const t2Total = team2Matches.size;
+            const t1Home = [...team1Matches.values()].filter(m => m.isHome).length;
+            const t2Home = [...team2Matches.values()].filter(m => m.isHome).length;
+            const t1Away = t1Total - t1Home;
+            const t2Away = t2Total - t2Home;
+            const t1Diff = [...team1Matches.values()].reduce((s, m) => s + m.difficulty, 0);
+            const t2Diff = [...team2Matches.values()].reduce((s, m) => s + m.difficulty, 0);
+            const t1Avg = t1Total > 0 ? (t1Diff / t1Total).toFixed(1) : 0;
+            const t2Avg = t2Total > 0 ? (t2Diff / t2Total).toFixed(1) : 0;
+
+            let t1LevelName = '', t2LevelName = '';
+            if (levelsData) {
+                levelsData.levels.forEach(l => {
+                    if (l.teams.includes(selectedTeam1)) t1LevelName = l.name;
+                    if (l.teams.includes(selectedTeam2)) t2LevelName = l.name;
+                });
+            }
+
+            let rows = '';
+            merged.forEach(item => {
+                const m1 = item.team1;
+                const m2 = item.team2;
+                const isConflict = item.isConflict;
+                
+                let col1 = '-', col2 = '-', col3 = '-', col4 = '-';
+                let diff1 = '-', diff2 = '-';
+                
+                if (m1) {
+                    col1 = m1.opponent;
+                    col2 = m1.isHome ? '🏠 Home' : '✈️ Away';
+                    diff1 = m1.difficulty;
+                }
+                if (m2) {
+                    col3 = m2.opponent;
+                    col4 = m2.isHome ? '🏠 Home' : '✈️ Away';
+                    diff2 = m2.difficulty;
+                }
+
+                let diff1Class = 'diff-easy', diff2Class = 'diff-easy';
+                if (diff1 !== '-') {
+                    if (diff1 >= 6) diff1Class = 'diff-high';
+                    else if (diff1 >= 3) diff1Class = 'diff-mid';
+                    else if (diff1 >= 2) diff1Class = 'diff-low';
+                }
+                if (diff2 !== '-') {
+                    if (diff2 >= 6) diff2Class = 'diff-high';
+                    else if (diff2 >= 3) diff2Class = 'diff-mid';
+                    else if (diff2 >= 2) diff2Class = 'diff-low';
+                }
+
+                const diffHtml = `
+                    <div class="diff-cell">
+                        ${diff1 !== '-' ? `<span class="diff ${diff1Class} diff-team1">${diff1}</span>` : '<span style="color:#555;">-</span>'}
+                        ${diff2 !== '-' ? `<span class="diff ${diff2Class} diff-team2">${diff2}</span>` : '<span style="color:#555;">-</span>'}
+                    </div>
+                `;
+
+                const conflictClass = isConflict ? 'conflict' : '';
+                const conflictIcon = isConflict ? '⚠️' : '';
+
+                rows += `
+                    <tr class="${conflictClass}">
+                        <td><span class="round-badge">GW${item.round}</span> ${conflictIcon}</td>
+                        <td>${col1} ${m1 ? `<span style="font-size:0.6em;color:#888;">(Lvl ${teamLevel[m1.opponent] || '?'})</span>` : ''}</td>
+                        <td>${col2}</td>
+                        <td>${col3} ${m2 ? `<span style="font-size:0.6em;color:#888;">(Lvl ${teamLevel[m2.opponent] || '?'})</span>` : ''}</td>
+                        <td>${col4}</td>
+                        <td>${diffHtml}</td>
+                    </tr>
+                `;
+            });
+
+            // Integration score
+            const allDiffs = [...team1Matches.values()].map(m => m.difficulty);
+            const allDiffs2 = [...team2Matches.values()].map(m => m.difficulty);
+            const combinedDiffs = [...allDiffs, ...allDiffs2];
+            const avgCombined = combinedDiffs.reduce((s, d) => s + d, 0) / combinedDiffs.length;
+            const variance = combinedDiffs.reduce((s, d) => s + Math.pow(d - avgCombined, 2), 0) / combinedDiffs.length;
+            const stdDev = Math.sqrt(variance);
+            const integrationScore = Math.max(0, 10 - stdDev);
+            
+            let integrationLabel = 'Poor 🔴';
+            let integrationClass = 'poor';
+            if (integrationScore >= 7) { integrationLabel = 'Excellent ✅'; integrationClass = 'excellent'; }
+            else if (integrationScore >= 5) { integrationLabel = 'Good 🟡'; integrationClass = 'good'; }
+
+            // Conflicts summary
+            let conflictHtml = '';
+            if (conflicts.length > 0) {
+                conflictHtml = `
+                    <div class="conflict-list">
+                        <strong>⚠️ Conflicting Gameweeks (BOTH teams have difficulty ≥ 3):</strong><br>
+                        ${conflicts.map(gw => `<span class="conflict-item">GW${gw}</span>`).join(' ')}
+                        <div style="font-size:0.8em;color:#888;margin-top:5px;">
+                            🟠 Orange = Difficulty 3-5 | 🔴 Red = Difficulty 6
+                        </div>
+                    </div>
+                `;
+            } else {
+                conflictHtml = `
+                    <div class="conflict-list">
+                        <span class="no-conflict">✅ No conflicting gameweeks found!</span>
+                        <div style="font-size:0.8em;color:#888;margin-top:3px;">
+                            Both teams never have difficulty ≥ 3 in the same round.
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Selection bar HTML
+            const selectionHtml = `
+                <div class="selection-bar">
+                    <span class="team1-label">🔴 Team 1:</span>
+                    <span class="selected team1 ${selectedTeam1 ? '' : 'empty'}" onclick="handleTeamClick('${selectedTeam1 || ''}')">${selectedTeam1 || 'None'}</span>
+                    <span style="color:#888;">|</span>
+                    <span class="team2-label">🔵 Team 2:</span>
+                    <span class="selected team2 ${selectedTeam2 ? '' : 'empty'}" onclick="handleTeamClick('${selectedTeam2 || ''}')">${selectedTeam2 || 'None'}</span>
+                    <span style="color:#888;font-size:0.7em;margin-right:auto;">Click team name to deselect</span>
+                </div>
+            `;
+
+            content.innerHTML = `
+                ${selectionHtml}
+
+                <div class="stats-box">
+                    <div class="team-stats" style="border-left:3px solid #e94560;">
+                        <h3 style="color:#e94560;">${selectedTeam1 || 'Team 1'}</h3>
+                        <div class="level-info">Level ${teamLevel[selectedTeam1] || '?'} — ${t1LevelName}</div>
+                        <div class="stat-row">
+                            <span>Total: ${t1Total}</span>
+                            <span style="color:#2ecc71;">Home: ${t1Home}</span>
+                            <span style="color:#e74c3c;">Away: ${t1Away}</span>
+                            <span style="color:#ffd700;">Avg: ${t1Avg}</span>
+                            <span style="color:#e94560;">Total Diff: ${t1Diff}</span>
+                        </div>
+                    </div>
+                    <div class="team-stats" style="border-left:3px solid #2196F3;">
+                        <h3 style="color:#2196F3;">${selectedTeam2 || 'Team 2'}</h3>
+                        <div class="level-info">Level ${teamLevel[selectedTeam2] || '?'} — ${t2LevelName}</div>
+                        <div class="stat-row">
+                            <span>Total: ${t2Total}</span>
+                            <span style="color:#2ecc71;">Home: ${t2Home}</span>
+                            <span style="color:#e74c3c;">Away: ${t2Away}</span>
+                            <span style="color:#ffd700;">Avg: ${t2Avg}</span>
+                            <span style="color:#2196F3;">Total Diff: ${t2Diff}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Round</th>
+                            <th style="color:#e94560;">${selectedTeam1 || 'T1'} Opponent</th>
+                            <th style="color:#e94560;">Venue</th>
+                            <th style="color:#2196F3;">${selectedTeam2 || 'T2'} Opponent</th>
+                            <th style="color:#2196F3;">Venue</th>
+                            <th>Difficulty</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+
+                <div class="summary">
+                    <div><strong>📊 Summary:</strong></div>
+                    <div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:5px;">
+                        <span class="t1">🔴 ${selectedTeam1}: ${t1Diff} total difficulty (avg ${t1Avg})</span>
+                        <span class="t2">🔵 ${selectedTeam2}: ${t2Diff} total difficulty (avg ${t2Avg})</span>
+                    </div>
+                    
+                    <div class="integration-box">
+                        <div>
+                            <strong>🔄 Fixture Integration Score:</strong> 
+                            <span class="score ${integrationClass}">${integrationScore.toFixed(2)}/10</span>
+                            <span> — ${integrationLabel}</span>
+                        </div>
+                        <div style="font-size:0.8em;color:#888;margin-top:3px;">
+                            ${integrationScore >= 7 ? '✅ The two fixture lists are well balanced. Great for FPL planning!' : 
+                              integrationScore >= 5 ? '🟡 Moderately balanced. Consider team rotation.' : 
+                              '🔴 Fixture lists are imbalanced. One team has much harder fixtures.'}
+                        </div>
+                    </div>
+
+                    ${conflictHtml}
+                </div>
+            `;
+        }
+
+        function getTeamMatches(teamName) {
+            if (!teamName) return new Map();
+            
+            const matches = firstHalf.flatMap(r => 
+                r.matches
+                    .filter(m => m.home === teamName || m.away === teamName)
+                    .map(m => ({
+                        round: r.round,
+                        opponent: m.home === teamName ? m.away : m.home,
+                        isHome: m.home === teamName,
+                        difficulty: getDifficulty(teamLevel[m.home === teamName ? m.away : m.home] || 4, m.home === teamName)
+                    }))
+            );
+            
+            const map = new Map();
+            matches.forEach(m => map.set(m.round, m));
+            return map;
+        }
+    </script>
+</body>
+</html>

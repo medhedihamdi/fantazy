@@ -1,0 +1,60 @@
+{
+  "levels": [
+    {
+      "level": 1,
+      "name": "المرشحون للقب",
+      "teams": [
+        "Liverpool",
+        "Arsenal",
+        "Manchester City"
+      ]
+    },
+    {
+      "level": 2,
+      "name": "المنافسون على دوري الأبطال",
+      "teams": [
+        "Chelsea",
+        "Manchester United",
+        "Tottenham Hotspur"
+      ]
+    },
+    {
+      "level": 3,
+      "name": "فرق قوية",
+      "teams": [
+        "Aston Villa",
+        "Newcastle United"
+      ]
+    },
+    {
+      "level": 4,
+      "name": "فرق الوسط",
+      "teams": [
+        "Brighton and Hove Albion",
+        "Bournemouth",
+        "Brentford",
+        "Crystal Palace",
+        "Everton",
+        "Nottingham Forest",
+        "Sunderland"
+      ]
+    },
+    {
+      "level": 5,
+      "name": "المرشحون للهبوط",
+      "teams": [
+        "Fulham",
+        "Leeds United"
+      ]
+    },
+    {
+      "level": 6,
+      "name": "الصاعدون",
+      "teams": [
+        "Hull City",
+        "Ipswich Town",
+        "Coventry City"
+      ]
+    }
+  ]
+}
