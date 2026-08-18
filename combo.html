@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premier League - Combo Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        h1 { text-align: center; color: #ffd700; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.9em; }
+        
+        .back-btn {
+            display: inline-block;
+            background: #2a2a5a;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: #3a3a6a; }
+        
+        .controls {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .controls label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+            flex-wrap: wrap;
+            font-size: 0.85em;
+        }
+        .controls select, .controls input {
+            background: #1a1a40;
+            color: #fff;
+            border: 1px solid #2a2a5a;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 150px;
+            font-size: 0.9em;
+        }
+        .controls select:hover, .controls input:hover {
+            border-color: #ffd700;
+        }
+        .controls .required-label {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .controls .optional-label {
+            color: #64b5f6;
+        }
+        .controls .category-label {
+            color: #9b59b6;
+        }
+        
+        .combo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 20px;
+        }
+        
+        .combo-card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 15px;
+            border-left: 4px solid #ffd700;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .combo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.1);
+        }
+        .combo-card .rank {
+            font-size: 1.2em;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .combo-card .teams {
+            margin: 8px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .combo-card .teams span {
+            background: #1a1a40;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            border: 1px solid #2a2a5a;
+        }
+        .combo-card .teams span.required {
+            border-color: #ffd700;
+            background: #2a1a1a;
+        }
+        .combo-card .teams span.optional {
+            border-color: #64b5f6;
+            background: #1a1a3a;
+        }
+        .combo-card .teams span.auto {
+            border-color: #2a2a5a;
+            background: #1a1a40;
+        }
+        .combo-card .teams span.diff3 {
+            border-color: #e67e22;
+            background: #2a1a0a;
+            color: #f39c12;
+        }
+        .combo-card .teams span.from-category {
+            border-color: #9b59b6;
+            background: #1a0a2a;
+            font-style: italic;
+        }
+        .combo-card .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            font-size: 0.8em;
+        }
+        .combo-card .stats .stat {
+            background: #1a1a40;
+            padding: 2px 10px;
+            border-radius: 10px;
+        }
+        .combo-card .stats .failed {
+            color: #e74c3c;
+        }
+        .combo-card .stats .diff3-stat {
+            color: #f39c12;
+        }
+        .combo-card .stats .good-stat {
+            color: #2ecc71;
+        }
+        .combo-card .gw-details {
+            margin-top: 10px;
+            font-size: 0.75em;
+            color: #888;
+            border-top: 1px solid #2a2a5a;
+            padding-top: 8px;
+        }
+        .combo-card .gw-details .gw-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 2px 0;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .combo-card .gw-details .gw-row.easy {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 3px solid #2ecc71;
+        }
+        .combo-card .gw-details .gw-row.failed {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 3px solid #e74c3c;
+        }
+        .combo-card .gw-details .gw-row.diff3-warning {
+            background: rgba(243, 156, 18, 0.1);
+            border-left: 3px solid #f39c12;
+        }
+        .combo-card .gw-details .gw-row.perfect {
+            background: rgba(46, 204, 113, 0.2);
+            border-left: 3px solid #2ecc71;
+        }
+        .combo-card .gw-details .easy-gw {
+            color: #2ecc71;
+        }
+        .combo-card .gw-details .failed-gw {
+            color: #e74c3c;
+        }
+        .combo-card .gw-details .diff3-label {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        .combo-card .gw-details .perfect-label {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+        .loading .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #2a2a5a;
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            grid-column: 1 / -1;
+        }
+        
+        .info-box {
+            background: #1a1a40;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-right: 3px solid #ffd700;
+            font-size: 0.9em;
+        }
+        .info-box .highlight {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .info-box .stat-summary {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+            font-size: 0.85em;
+        }
+        .info-box .stat-summary span {
+            background: #0f0f23;
+            padding: 2px 12px;
+            border-radius: 10px;
+        }
+        .info-box .stat-summary .good {
+            color: #2ecc71;
+        }
+        .info-box .stat-summary .bad {
+            color: #e74c3c;
+        }
+        .info-box .stat-summary .warning {
+            color: #f39c12;
+        }
+        
+        .selected-teams-info {
+            background: #0f0f23;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 0.85em;
+            color: #888;
+        }
+        .selected-teams-info .selected-team {
+            color: #fff;
+            font-weight: bold;
+        }
+        .selected-teams-info .required-team {
+            color: #ffd700;
+        }
+        .selected-teams-info .optional-team {
+            color: #64b5f6;
+        }
+        .selected-teams-info .category-team {
+            color: #9b59b6;
+            font-style: italic;
+        }
+        
+        .legend-box {
+            background: #0f0f23;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 5px 0 15px 0;
+            font-size: 0.8em;
+            color: #888;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .legend-box span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-box .dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .legend-box .dot.green { background: #2ecc71; }
+        .legend-box .dot.orange { background: #f39c12; }
+        .legend-box .dot.red { background: #e74c3c; }
+        .legend-box .dot.purple { background: #9b59b6; }
+        
+        @media (max-width: 750px) {
+            .combo-grid { grid-template-columns: 1fr; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .controls select { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="javascript:history.back()" class="back-btn">← Back to Fixture Analysis</a>
+        
+        <h1>🎯 Best Team Combos</h1>
+        <p class="subtitle">Select mandatory team + up to 3 options (team OR category)</p>
+        
+        <div class="controls">
+            <label>
+                Combo Size:
+                <select id="comboSize" onchange="generateCombos();">
+                    <option value="3">3 Teams</option>
+                    <option value="4" selected>4 Teams</option>
+                    <option value="5">5 Teams</option>
+                </select>
+            </label>
+            
+            <label>
+                <span class="required-label">⭐ Mandatory:</span>
+                <select id="mandatoryTeam" onchange="generateCombos()">
+                    <option value="">-- Select --</option>
+                </select>
+            </label>
+            
+            <label>
+                <span class="optional-label">🔵 Option 1:</span>
+                <select id="option1" onchange="generateCombos()">
+                    <option value="">-- None --</option>
+                </select>
+            </label>
+            
+            <label>
+                <span class="optional-label">🔵 Option 2:</span>
+                <select id="option2" onchange="generateCombos()">
+                    <option value="">-- None --</option>
+                </select>
+            </label>
+            
+            <label>
+                <span class="optional-label">🔵 Option 3:</span>
+                <select id="option3" onchange="generateCombos()">
+                    <option value="">-- None --</option>
+                </select>
+            </label>
+            
+            <label>
+                Show Top:
+                <select id="topCount" onchange="generateCombos()">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30" selected>30</option>
+                    <option value="50">50</option>
+                </select>
+            </label>
+            
+            <button onclick="generateCombos()" style="background:#ffd700;border:none;color:#1a1a2e;padding:6px 20px;border-radius:6px;cursor:pointer;font-weight:bold;">
+                🔄 Generate
+            </button>
+        </div>
+        
+        <div id="selectedTeamsInfo" class="selected-teams-info"></div>
+        
+        <div class="legend-box">
+            <span><span class="dot green"></span> Easy (diff ≤ 3)</span>
+            <span><span class="dot orange"></span> Difficulty = 3</span>
+            <span><span class="dot red"></span> Failed (less than 3 easy)</span>
+            <span><span class="dot purple"></span> Team from category</span>
+        </div>
+        
+        <div id="comboContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top:15px;">Loading team data...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allTeams = [];
+        let teamLevels = {};
+        let teamCategories = {};
+        let categories = [];
+        let firstHalfFixtures = [];
+        let isGenerating = false;
+        let levelsData = null;
+
+        // ============================================================
+        // Load Data
+        // ============================================================
+        async function loadData() {
+            try {
+                const [gwRes, levelsRes] = await Promise.all([
+                    fetch('gw.json'),
+                    fetch('levels.json')
+                ]);
+                const gw = await gwRes.json();
+                levelsData = await levelsRes.json();
+                
+                // Build team levels and categories
+                levelsData.levels.forEach(l => {
+                    l.teams.forEach(t => { 
+                        teamLevels[t] = l.level;
+                        teamCategories[t] = l.name;
+                    });
+                    categories.push(l.name);
+                });
+                
+                // Get first half fixtures
+                firstHalfFixtures = gw.matchweeks.filter(r => r.round <= 19);
+                
+                // Get all teams
+                allTeams = [...new Set(firstHalfFixtures.flatMap(r => r.matches.flatMap(m => [m.home, m.away])))].sort();
+                
+                // Populate selectors
+                populateSelectors();
+                generateCombos();
+            } catch (error) {
+                document.getElementById('comboContainer').innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size:2em;">⚠️</p>
+                        <p>Error loading data. Please make sure gw.json and levels.json are in the same directory.</p>
+                        <p style="font-size:0.8em;color:#666;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================================
+        // Populate Selectors
+        // ============================================================
+        function populateSelectors() {
+            const selectors = ['mandatoryTeam', 'option1', 'option2', 'option3'];
+            
+            selectors.forEach(id => {
+                const select = document.getElementById(id);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Select --</option>';
+                
+                // Add team categories as options (for all except mandatory)
+                if (id !== 'mandatoryTeam') {
+                    categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = 'category:' + cat;
+                        option.textContent = '📂 ' + cat;
+                        option.style.color = '#9b59b6';
+                        select.appendChild(option);
+                    });
+                }
+                
+                // Add all teams
+                allTeams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team;
+                    option.textContent = team;
+                    select.appendChild(option);
+                });
+                
+                if (currentValue && allTeams.includes(currentValue)) {
+                    select.value = currentValue;
+                }
+            });
+        }
+
+        // ============================================================
+        // Get Teams from Selection
+        // ============================================================
+        function getTeamsFromSelection(value) {
+            if (!value) return [];
+            if (value.startsWith('category:')) {
+                const category = value.replace('category:', '');
+                return allTeams.filter(t => teamCategories[t] === category);
+            }
+            return [value];
+        }
+
+        // ============================================================
+        // Update Selected Teams Info
+        // ============================================================
+        function updateSelectedTeamsInfo() {
+            const mandatory = document.getElementById('mandatoryTeam').value;
+            const option1 = document.getElementById('option1').value;
+            const option2 = document.getElementById('option2').value;
+            const option3 = document.getElementById('option3').value;
+            const comboSize = parseInt(document.getElementById('comboSize').value);
+            
+            const infoDiv = document.getElementById('selectedTeamsInfo');
+            let html = '📋 <strong>Selected:</strong> ';
+            
+            if (mandatory) {
+                html += `<span class="required-team">⭐ ${mandatory}</span> `;
+            } else {
+                html += `<span style="color:#e74c3c;">⚠️ No mandatory</span> `;
+            }
+            
+            [option1, option2, option3].forEach((val, idx) => {
+                if (val) {
+                    if (val.startsWith('category:')) {
+                        const cat = val.replace('category:', '');
+                        html += `<span class="category-team">📂 ${cat}</span> `;
+                    } else {
+                        html += `<span class="optional-team">🔵 ${val}</span> `;
+                    }
+                }
+            });
+            
+            const selectedCount = [mandatory, option1, option2, option3].filter(v => v).length;
+            const remaining = comboSize - selectedCount;
+            html += `| <span style="color:#888;">+${remaining} team${remaining > 1 ? 's' : ''}</span>`;
+            
+            infoDiv.innerHTML = html;
+        }
+
+        // ============================================================
+        // Get Team Fixtures
+        // ============================================================
+        function getTeamFixtures(teamName) {
+            const fixtures = [];
+            firstHalfFixtures.forEach(r => {
+                const match = r.matches.find(m => m.home === teamName || m.away === teamName);
+                if (match) {
+                    const isHome = match.home === teamName;
+                    const opponent = isHome ? match.away : match.home;
+                    const opponentLevel = teamLevels[opponent] || 4;
+                    let difficulty = 0;
+                    if (opponentLevel === 1) difficulty = 6;
+                    else if (opponentLevel === 2) difficulty = 3;
+                    else if (opponentLevel === 3) difficulty = 1;
+                    if (!isHome) difficulty += 2;
+                    
+                    fixtures.push({
+                        round: r.round,
+                        opponent: opponent,
+                        isHome: isHome,
+                        difficulty: difficulty,
+                        isEasy: difficulty <= 3,
+                        isDiff3: difficulty === 3
+                    });
+                }
+            });
+            return fixtures;
+        }
+
+        // ============================================================
+        // Generate Combos
+        // ============================================================
+        function generateCombos() {
+            if (isGenerating) return;
+            isGenerating = true;
+            
+            const comboSize = parseInt(document.getElementById('comboSize').value);
+            const topCount = parseInt(document.getElementById('topCount').value);
+            const mandatory = document.getElementById('mandatoryTeam').value;
+            const option1 = document.getElementById('option1').value;
+            const option2 = document.getElementById('option2').value;
+            const option3 = document.getElementById('option3').value;
+            
+            if (!mandatory) {
+                document.getElementById('comboContainer').innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size:2em;">⚠️</p>
+                        <p>Please select a mandatory team first!</p>
+                    </div>
+                `;
+                isGenerating = false;
+                return;
+            }
+            
+            // Get all required teams from selections
+            const requiredTeams = [mandatory];
+            const optionValues = [option1, option2, option3].filter(v => v);
+            
+            // For each option, get the teams (or category teams)
+            let requiredTeamSets = optionValues.map(val => getTeamsFromSelection(val));
+            
+            // Generate all combinations of required teams
+            let requiredCombos = [[]];
+            requiredTeamSets.forEach(teamSet => {
+                const newCombos = [];
+                requiredCombos.forEach(combo => {
+                    teamSet.forEach(team => {
+                        if (!combo.includes(team) && team !== mandatory) {
+                            newCombos.push([...combo, team]);
+                        }
+                    });
+                });
+                requiredCombos = newCombos;
+            });
+            
+            // If no required combos (e.g., all options empty), use empty combo
+            if (requiredCombos.length === 0) {
+                requiredCombos = [[]];
+            }
+            
+            // Filter out combos that don't meet the size requirement
+            const validRequiredCombos = requiredCombos.filter(c => c.length <= comboSize);
+            
+            if (validRequiredCombos.length === 0) {
+                document.getElementById('comboContainer').innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size:2em;">😕</p>
+                        <p>No valid combinations with the selected options.</p>
+                    </div>
+                `;
+                isGenerating = false;
+                return;
+            }
+            
+            const combos = [];
+            
+            // Process each required combo
+            validRequiredCombos.forEach(reqCombo => {
+                const remainingCount = comboSize - reqCombo.length - 1; // -1 for mandatory
+                if (remainingCount < 0) return;
+                
+                const availableTeams = allTeams.filter(t => 
+                    !reqCombo.includes(t) && t !== mandatory
+                );
+                
+                if (availableTeams.length < remainingCount) return;
+                
+                const remainingCombos = getCombinations(availableTeams, remainingCount);
+                const fullCombos = remainingCombos.map(remaining => [mandatory, ...reqCombo, ...remaining]);
+                
+                fullCombos.forEach(teamCombo => {
+                    const gwAnalysis = {};
+                    
+                    teamCombo.forEach(team => {
+                        const fixtures = getTeamFixtures(team);
+                        fixtures.forEach(f => {
+                            if (!gwAnalysis[f.round]) {
+                                gwAnalysis[f.round] = { 
+                                    easyCount: 0, 
+                                    totalTeams: 0, 
+                                    easyTeams: [],
+                                    diff3Teams: [],
+                                    allTeams: []
+                                };
+                            }
+                            gwAnalysis[f.round].totalTeams++;
+                            gwAnalysis[f.round].allTeams.push(team);
+                            if (f.isEasy) {
+                                gwAnalysis[f.round].easyCount++;
+                                gwAnalysis[f.round].easyTeams.push(team);
+                                if (f.isDiff3) {
+                                    gwAnalysis[f.round].diff3Teams.push(team);
+                                }
+                            }
+                        });
+                    });
+                    
+                    // Calculate stats
+                    let failedWeeks = 0;          // weeks with LESS than 3 easy teams
+                    let totalWeeks = Object.keys(gwAnalysis).length;
+                    let weeksWith1Diff3 = 0;
+                    let weeksWith2Diff3 = 0;
+                    let weeksWith3PlusDiff3 = 0;
+                    let weeksWith4PlusEasy = 0;   // weeks with 4 or MORE easy teams
+                    
+                    Object.values(gwAnalysis).forEach(gw => {
+                        // FAILED: less than 3 easy teams
+                        if (gw.easyCount < 3) {
+                            failedWeeks++;
+                        }
+                        
+                        // BONUS STAT: 4 or more easy teams
+                        if (gw.easyCount >= 4) {
+                            weeksWith4PlusEasy++;
+                        }
+                        
+                        // Diff3 stats
+                        const diff3Count = gw.diff3Teams.length;
+                        if (diff3Count === 1) weeksWith1Diff3++;
+                        else if (diff3Count === 2) weeksWith2Diff3++;
+                        else if (diff3Count >= 3) weeksWith3PlusDiff3++;
+                    });
+                    
+                    combos.push({
+                        teams: teamCombo,
+                        requiredTeams: [mandatory, ...reqCombo],
+                        failedWeeks: failedWeeks,
+                        totalWeeks: totalWeeks,
+                        weeksWith1Diff3: weeksWith1Diff3,
+                        weeksWith2Diff3: weeksWith2Diff3,
+                        weeksWith3PlusDiff3: weeksWith3PlusDiff3,
+                        weeksWith4PlusEasy: weeksWith4PlusEasy,
+                        gwAnalysis: gwAnalysis,
+                        gwEasyTeams: Object.fromEntries(
+                            Object.entries(gwAnalysis).map(([gw, data]) => [gw, data.easyTeams])
+                        ),
+                        gwDiff3Teams: Object.fromEntries(
+                            Object.entries(gwAnalysis).map(([gw, data]) => [gw, data.diff3Teams || []])
+                        ),
+                        gwFailed: Object.fromEntries(
+                            Object.entries(gwAnalysis).map(([gw, data]) => [gw, data.easyCount < 3])
+                        ),
+                        gwEasyCount: Object.fromEntries(
+                            Object.entries(gwAnalysis).map(([gw, data]) => [gw, data.easyCount])
+                        )
+                    });
+                });
+            });
+            
+            // Sort: Primary by failedWeeks (ascending), Secondary by weeksWith4PlusEasy (descending)
+            combos.sort((a, b) => {
+                if (a.failedWeeks !== b.failedWeeks) {
+                    return a.failedWeeks - b.failedWeeks;
+                }
+                return b.weeksWith4PlusEasy - a.weeksWith4PlusEasy;
+            });
+            
+            // Remove duplicates (same teams, different order)
+            const uniqueCombos = [];
+            const seen = new Set();
+            combos.forEach(combo => {
+                const key = combo.teams.slice().sort().join(',');
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueCombos.push(combo);
+                }
+            });
+            
+            const topCombos = uniqueCombos.slice(0, topCount);
+            renderCombos(topCombos);
+            
+            isGenerating = false;
+        }
+
+        // ============================================================
+        // Get Combinations
+        // ============================================================
+        function getCombinations(arr, size) {
+            if (size === 0) return [[]];
+            if (arr.length === 0 || size > arr.length) return [];
+            
+            const result = [];
+            const [first, ...rest] = arr;
+            const withFirst = getCombinations(rest, size - 1).map(c => [first, ...c]);
+            const withoutFirst = getCombinations(rest, size);
+            return [...withFirst, ...withoutFirst];
+        }
+
+        // ============================================================
+        // Render Combos
+        // ============================================================
+        function renderCombos(combos) {
+            const container = document.getElementById('comboContainer');
+            
+            if (combos.length === 0) {
+                container.innerHTML = `
+                    <div class="no-results">
+                        <p style="font-size:2em;">🔍</p>
+                        <p>No combos found. Try adjusting your selections.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const bestCombo = combos[0];
+            let html = `
+                <div class="info-box">
+                    <strong>📊 Best Combo:</strong> 
+                    <span class="highlight">${bestCombo.failedWeeks} failed weeks</span>
+                    (${bestCombo.teams.join(', ')})
+                    ${bestCombo.failedWeeks === 0 ? ' 🏆 Perfect!' : ''}
+                    <div class="stat-summary">
+                        <span class="bad">❌ Failed: ${bestCombo.failedWeeks}</span>
+                        <span class="warning">🟠 1x diff3: ${bestCombo.weeksWith1Diff3}</span>
+                        <span class="warning">🟠 2x diff3: ${bestCombo.weeksWith2Diff3}</span>
+                        <span class="warning">🟠 3+ diff3: ${bestCombo.weeksWith3PlusDiff3}</span>
+                        <span class="good">✅ 4+ easy: ${bestCombo.weeksWith4PlusEasy}</span>
+                    </div>
+                </div>
+                <div class="combo-grid">
+            `;
+            
+            combos.forEach((combo, index) => {
+                const isRequired = (team) => combo.requiredTeams.includes(team);
+                const isMandatory = (team) => team === combo.requiredTeams[0];
+                const isOptional = (team) => combo.requiredTeams.includes(team) && team !== combo.requiredTeams[0];
+                
+                // Check if any team came from category selection
+                const isFromCategory = (team) => {
+                    const option1 = document.getElementById('option1').value;
+                    const option2 = document.getElementById('option2').value;
+                    const option3 = document.getElementById('option3').value;
+                    const selectedCategories = [option1, option2, option3]
+                        .filter(v => v && v.startsWith('category:'))
+                        .map(v => v.replace('category:', ''));
+                    return selectedCategories.some(cat => teamCategories[team] === cat);
+                };
+                
+                let gwDetails = '';
+                const sortedGW = Object.keys(combo.gwAnalysis).sort((a, b) => parseInt(a) - parseInt(b));
+                sortedGW.forEach(gw => {
+                    const data = combo.gwAnalysis[gw];
+                    const isFailed = data.easyCount < 3;
+                    const easyTeams = combo.gwEasyTeams[gw] || [];
+                    const diff3Teams = combo.gwDiff3Teams[gw] || [];
+                    const easyCount = data.easyCount;
+                    const totalTeams = data.totalTeams;
+                    
+                    let rowClass = 'easy';
+                    let statusLabel = '';
+                    if (isFailed) {
+                        rowClass = 'failed';
+                        statusLabel = `<span class="failed-gw">❌ FAILED (${easyCount}/3+)</span>`;
+                    } else if (easyCount >= 4) {
+                        rowClass = 'perfect';
+                        statusLabel = `<span class="perfect-label">✅ PERFECT (${easyCount}/3+)</span>`;
+                    } else {
+                        statusLabel = `<span class="easy-gw">✅ ${easyTeams.join(', ')}</span>`;
+                    }
+                    
+                    gwDetails += `
+                        <div class="gw-row ${rowClass}">
+                            <span>GW${gw}:</span>
+                            <span>${easyCount}/${totalTeams} easy</span>
+                            ${statusLabel}
+                            ${diff3Teams.length > 0 ? `<span class="diff3-label">🟠 ${diff3Teams.length}x diff3</span>` : ''}
+                        </div>
+                    `;
+                });
+                
+                let diff3TeamsInCombo = [];
+                Object.values(combo.gwDiff3Teams).forEach(teams => {
+                    teams.forEach(t => {
+                        if (!diff3TeamsInCombo.includes(t)) diff3TeamsInCombo.push(t);
+                    });
+                });
+                
+                html += `
+                    <div class="combo-card">
+                        <div class="rank">#${index + 1}</div>
+                        <div class="teams">
+                            ${combo.teams.map(t => {
+                                let cls = 'auto';
+                                if (isMandatory(t)) cls = 'required';
+                                else if (isOptional(t)) cls = 'optional';
+                                else if (isFromCategory(t)) cls = 'from-category';
+                                if (diff3TeamsInCombo.includes(t)) cls += ' diff3';
+                                return `<span class="${cls}">${t}${diff3TeamsInCombo.includes(t) ? ' 🟠' : ''}</span>`;
+                            }).join('')}
+                        </div>
+                        <div class="stats">
+                            <span class="stat ${combo.failedWeeks > 0 ? 'failed' : ''}">❌ Failed: ${combo.failedWeeks}</span>
+                            <span class="stat diff3-stat">🟠 1x: ${combo.weeksWith1Diff3}</span>
+                            <span class="stat diff3-stat">🟠 2x: ${combo.weeksWith2Diff3}</span>
+                            <span class="stat diff3-stat">🟠 3+: ${combo.weeksWith3PlusDiff3}</span>
+                            <span class="stat good-stat">✅ 4+: ${combo.weeksWith4PlusEasy}</span>
+                            ${combo.failedWeeks === 0 ? '<span class="stat" style="color:#ffd700;">🏆</span>' : ''}
+                        </div>
+                        <div class="gw-details">${gwDetails}</div>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            container.innerHTML = html;
+            updateSelectedTeamsInfo();
+        }
+
+        // ============================================================
+        // Initialize
+        // ============================================================
+        loadData();
+    </script>
+</body>
+</html>
