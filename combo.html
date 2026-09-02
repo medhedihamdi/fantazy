@@ -364,6 +364,25 @@
                 🔄 Generate
             </button>
         </div>
+
+        <!-- ====== NEW: GW Range Controls ====== -->
+        <div class="controls" style="margin-top:10px; border-top:1px solid #444; padding-top:10px;">
+            <label>
+                <span style="color:#00d2ff;">📅 From GW:</span>
+                <select id="gwFrom" onchange="generateCombos()">
+                    <!-- will be populated dynamically -->
+                </select>
+            </label>
+            <label>
+                <span style="color:#00d2ff;">📅 To GW:</span>
+                <select id="gwTo" onchange="generateCombos()">
+                    <!-- will be populated dynamically -->
+                </select>
+            </label>
+            <span style="font-size:0.85em; color:#888; margin-left:10px;">
+                (Default: 1 to 19)
+            </span>
+        </div>
         
         <div id="selectedTeamsInfo" class="selected-teams-info"></div>
         
@@ -390,6 +409,7 @@
         let firstHalfFixtures = [];
         let isGenerating = false;
         let levelsData = null;
+        let allRounds = [];
 
         // ============================================================
         // Load Data
@@ -414,12 +434,14 @@
                 
                 // Get first half fixtures
                 firstHalfFixtures = gw.matchweeks.filter(r => r.round <= 19);
+                allRounds = firstHalfFixtures.map(r => r.round).sort((a, b) => a - b);
                 
                 // Get all teams
                 allTeams = [...new Set(firstHalfFixtures.flatMap(r => r.matches.flatMap(m => [m.home, m.away])))].sort();
                 
                 // Populate selectors
                 populateSelectors();
+                populateGWSelectors();
                 generateCombos();
             } catch (error) {
                 document.getElementById('comboContainer').innerHTML = `
@@ -429,6 +451,37 @@
                         <p style="font-size:0.8em;color:#666;">${error.message}</p>
                     </div>
                 `;
+            }
+        }
+
+        // ============================================================
+        // Populate GW Range Selectors
+        // ============================================================
+        function populateGWSelectors() {
+            const fromSelect = document.getElementById('gwFrom');
+            const toSelect = document.getElementById('gwTo');
+            
+            // Clear existing options
+            fromSelect.innerHTML = '';
+            toSelect.innerHTML = '';
+            
+            // Add options for each round
+            allRounds.forEach(round => {
+                const option1 = document.createElement('option');
+                option1.value = round;
+                option1.textContent = round;
+                fromSelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = round;
+                option2.textContent = round;
+                toSelect.appendChild(option2);
+            });
+            
+            // Set defaults: from = 1, to = max (19)
+            if (allRounds.length > 0) {
+                fromSelect.value = allRounds[0]; // 1
+                toSelect.value = allRounds[allRounds.length - 1]; // 19
             }
         }
 
@@ -510,6 +563,11 @@
                 }
             });
             
+            // Show GW range
+            const gwFrom = document.getElementById('gwFrom').value;
+            const gwTo = document.getElementById('gwTo').value;
+            html += `| <span style="color:#00d2ff;">📅 GW ${gwFrom} → ${gwTo}</span>`;
+            
             const selectedCount = [mandatory, option1, option2, option3].filter(v => v).length;
             const remaining = comboSize - selectedCount;
             html += `| <span style="color:#888;">+${remaining} team${remaining > 1 ? 's' : ''}</span>`;
@@ -518,11 +576,15 @@
         }
 
         // ============================================================
-        // Get Team Fixtures
+        // Get Team Fixtures (with GW range filtering)
         // ============================================================
-        function getTeamFixtures(teamName) {
+        function getTeamFixtures(teamName, gwFrom, gwTo) {
             const fixtures = [];
-            firstHalfFixtures.forEach(r => {
+            const filteredFixtures = firstHalfFixtures.filter(r => 
+                r.round >= gwFrom && r.round <= gwTo
+            );
+            
+            filteredFixtures.forEach(r => {
                 const match = r.matches.find(m => m.home === teamName || m.away === teamName);
                 if (match) {
                     const isHome = match.home === teamName;
@@ -560,6 +622,10 @@
             const option1 = document.getElementById('option1').value;
             const option2 = document.getElementById('option2').value;
             const option3 = document.getElementById('option3').value;
+            
+            // Get GW range
+            const gwFrom = parseInt(document.getElementById('gwFrom').value) || 1;
+            const gwTo = parseInt(document.getElementById('gwTo').value) || 19;
             
             if (!mandatory) {
                 document.getElementById('comboContainer').innerHTML = `
@@ -632,7 +698,7 @@
                     const gwAnalysis = {};
                     
                     teamCombo.forEach(team => {
-                        const fixtures = getTeamFixtures(team);
+                        const fixtures = getTeamFixtures(team, gwFrom, gwTo);
                         fixtures.forEach(f => {
                             if (!gwAnalysis[f.round]) {
                                 gwAnalysis[f.round] = { 
@@ -763,12 +829,18 @@
             }
             
             const bestCombo = combos[0];
+            const gwFrom = document.getElementById('gwFrom').value;
+            const gwTo = document.getElementById('gwTo').value;
+            
             let html = `
                 <div class="info-box">
                     <strong>📊 Best Combo:</strong> 
                     <span class="highlight">${bestCombo.failedWeeks} failed weeks</span>
                     (${bestCombo.teams.join(', ')})
                     ${bestCombo.failedWeeks === 0 ? ' 🏆 Perfect!' : ''}
+                    <div style="font-size:0.85em; color:#00d2ff; margin-top:4px;">
+                        📅 GW ${gwFrom} → ${gwTo} (${bestCombo.totalWeeks} gameweeks)
+                    </div>
                     <div class="stat-summary">
                         <span class="bad">❌ Failed: ${bestCombo.failedWeeks}</span>
                         <span class="warning">🟠 1x diff3: ${bestCombo.weeksWith1Diff3}</span>
