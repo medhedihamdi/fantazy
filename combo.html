@@ -349,6 +349,13 @@
                     <option value="">-- None --</option>
                 </select>
             </label>
+
+            <label>
+                <span class="optional-label">🔵 Option 4:</span>
+                <select id="option4" onchange="generateCombos()">
+                    <option value="">-- None --</option>
+                </select>
+            </label>
             
             <label>
                 Show Top:
@@ -489,7 +496,7 @@
         // Populate Selectors
         // ============================================================
         function populateSelectors() {
-            const selectors = ['mandatoryTeam', 'option1', 'option2', 'option3'];
+            const selectors = ['mandatoryTeam', 'option1', 'option2', 'option3', 'option4'];
             
             selectors.forEach(id => {
                 const select = document.getElementById(id);
@@ -541,6 +548,7 @@
             const option1 = document.getElementById('option1').value;
             const option2 = document.getElementById('option2').value;
             const option3 = document.getElementById('option3').value;
+            const option4 = document.getElementById('option4').value;
             const comboSize = parseInt(document.getElementById('comboSize').value);
             
             const infoDiv = document.getElementById('selectedTeamsInfo');
@@ -552,7 +560,7 @@
                 html += `<span style="color:#e74c3c;">⚠️ No mandatory</span> `;
             }
             
-            [option1, option2, option3].forEach((val, idx) => {
+            [option1, option2, option3, option4].forEach((val, idx) => {
                 if (val) {
                     if (val.startsWith('category:')) {
                         const cat = val.replace('category:', '');
@@ -568,7 +576,7 @@
             const gwTo = document.getElementById('gwTo').value;
             html += `| <span style="color:#00d2ff;">📅 GW ${gwFrom} → ${gwTo}</span>`;
             
-            const selectedCount = [mandatory, option1, option2, option3].filter(v => v).length;
+            const selectedCount = [mandatory, option1, option2, option3, option4].filter(v => v).length;
             const remaining = comboSize - selectedCount;
             html += `| <span style="color:#888;">+${remaining} team${remaining > 1 ? 's' : ''}</span>`;
             
@@ -622,6 +630,7 @@
             const option1 = document.getElementById('option1').value;
             const option2 = document.getElementById('option2').value;
             const option3 = document.getElementById('option3').value;
+            const option4 = document.getElementById('option4').value;
             
             // Get GW range
             const gwFrom = parseInt(document.getElementById('gwFrom').value) || 1;
@@ -640,7 +649,7 @@
             
             // Get all required teams from selections
             const requiredTeams = [mandatory];
-            const optionValues = [option1, option2, option3].filter(v => v);
+            const optionValues = [option1, option2, option3, option4].filter(v => v);
             
             // For each option, get the teams (or category teams)
             let requiredTeamSets = optionValues.map(val => getTeamsFromSelection(val));
@@ -664,8 +673,8 @@
                 requiredCombos = [[]];
             }
             
-            // Filter out combos that don't meet the size requirement
-            const validRequiredCombos = requiredCombos.filter(c => c.length <= comboSize);
+            // Filter out combos that don't meet the size requirement (mandatory + selected options)
+            const validRequiredCombos = requiredCombos.filter(c => (c.length + 1) <= comboSize);
             
             if (validRequiredCombos.length === 0) {
                 document.getElementById('comboContainer').innerHTML = `
@@ -862,7 +871,8 @@
                     const option1 = document.getElementById('option1').value;
                     const option2 = document.getElementById('option2').value;
                     const option3 = document.getElementById('option3').value;
-                    const selectedCategories = [option1, option2, option3]
+                    const option4 = document.getElementById('option4').value;
+                    const selectedCategories = [option1, option2, option3, option4]
                         .filter(v => v && v.startsWith('category:'))
                         .map(v => v.replace('category:', ''));
                     return selectedCategories.some(cat => teamCategories[team] === cat);

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Stats - Fantasy</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+        .container { max-width: 1300px; margin: 0 auto; }
+        h1 { text-align: center; color: #ffd700; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 20px; font-size: 0.95em; }
+        .back-btn {
+            display: inline-block;
+            background: #2a2a5a;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .back-btn:hover { background: #3a3a6a; }
+        .card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-group label { color: #fff; font-size: 0.9em; font-weight: bold; }
+        select {
+            width: 100%;
+            background: #1a1a40;
+            color: #fff;
+            border: 1px solid #2a2a5a;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+        select:focus { outline: none; border-color: #ffd700; }
+        .status { text-align: center; padding: 12px; color: #ccc; }
+        .status.error { color: #ff6b6b; }
+        .status.success { color: #2ecc71; }
+        .muted { color: #888; font-size: 0.85em; margin-top: 8px; text-align: center; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 900px; }
+        th {
+            background: #1a1a40;
+            color: #ffd700;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.9em;
+            border-bottom: 2px solid #2196F3;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #2a2a5a;
+            color: #ddd;
+            white-space: nowrap;
+        }
+        tr:hover td { background: #1a1a40; }
+        .clickable { cursor: pointer; }
+        .selected-row td { background: #22335a; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: #fff;
+        }
+        .diff-1, .diff-2 { background: #27ae60; }
+        .diff-3 { background: #e67e22; }
+        .diff-4, .diff-5 { background: #c0392b; }
+        .hidden { display: none !important; }
+        .detail-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1000px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
+        .player-name { font-size: 1.25em; color: #ffd700; font-weight: bold; }
+        .player-meta { color: #aaa; margin-top: 4px; }
+        h2 { color: #ffd700; font-size: 1.05em; margin-bottom: 8px; }
+        .small { font-size: 0.85em; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back</a>
+        <h1>Player Stats</h1>
+        <p class="subtitle">Filter and sort players, then click a player to view details and next 6 fixtures</p>
+
+        <div class="card">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="positionSelect">Player Position</label>
+                    <select id="positionSelect">
+                        <option value="all">All</option>
+                        <option value="1">Goalkeeper (GK)</option>
+                        <option value="2">Defender (DEF)</option>
+                        <option value="3">Midfielder (MID)</option>
+                        <option value="4">Forward (FWD)</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="teamSelect">Team</label>
+                    <select id="teamSelect">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="priceSelect">Price Category</label>
+                    <select id="priceSelect">
+                        <option value="all">All</option>
+                        <option value="0-4.5">£4.5m or less</option>
+                        <option value="0-5.0">£5.0m or less</option>
+                        <option value="0-5.5">£5.5m or less</option>
+                        <option value="0-6.0">£6.0m or less</option>
+                        <option value="0-6.5">£6.5m or less</option>
+                        <option value="0-7.0">£7.0m or less</option>
+                        <option value="0-7.5">£7.5m or less</option>
+                        <option value="0-8.0">£8.0m or less</option>
+                        <option value="0-9.0">£9.0m or less</option>
+                        <option value="0-10.0">£10.0m or less</option>
+                        <option value="10.1-99">More than £10.0m</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sortSelect">Sort By</label>
+                    <select id="sortSelect">
+                        <option value="points_desc">Total Points (High to Low)</option>
+                        <option value="cs_desc">Clean Sheets (High to Low)</option>
+                        <option value="defcon_desc">Defensive Contributions (High to Low)</option>
+                        <option value="assists_desc">Assists (High to Low)</option>
+                        <option value="goals_desc">Goals Scored (High to Low)</option>
+                        <option value="bonus_desc">Bonus Points (High to Low)</option>
+                        <option value="price_asc">Price (Low to High)</option>
+                        <option value="price_desc">Price (High to Low)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="status" class="status">Loading Fantasy Premier League data...</div>
+            <p class="muted" id="sourceNote"></p>
+        </div>
+
+        <div class="card">
+            <h2>Players</h2>
+            <div class="small" id="resultsInfo">-</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Team</th>
+                            <th>Position</th>
+                            <th>Price</th>
+                            <th>Total Points</th>
+                            <th>Clean Sheets</th>
+                            <th>Def. Contrib.</th>
+                            <th>Assists</th>
+                            <th>Goals</th>
+                            <th>Bonus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playersBody">
+                        <tr><td colspan="10" style="text-align:center; color:#888;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="detailCard" class="card hidden">
+            <div class="player-name" id="playerName">-</div>
+            <div class="player-meta" id="playerMeta">-</div>
+            <div class="detail-grid" style="margin-top:12px;">
+                <div>
+                    <h2>Season Stats</h2>
+                    <table style="min-width: 0;">
+                        <thead>
+                            <tr><th>Stat</th><th>Value</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Total Points</td><td id="stat-total">-</td></tr>
+                            <tr><td>Clean Sheets</td><td id="stat-cs">-</td></tr>
+                            <tr><td>Defensive Contributions</td><td id="stat-defcon">-</td></tr>
+                            <tr><td>Assists</td><td id="stat-assists">-</td></tr>
+                            <tr><td>Goals Scored</td><td id="stat-goals">-</td></tr>
+                            <tr><td>Bonus Points</td><td id="stat-bonus">-</td></tr>
+                            <tr><td>Overall Season Points</td><td id="stat-season">-</td></tr>
+                            <tr><td>Price</td><td id="stat-price">-</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h2>Next 6 Fixtures</h2>
+                    <table style="min-width: 0;">
+                        <thead>
+                            <tr>
+                                <th>GW</th>
+                                <th>Opponent</th>
+                                <th>Venue</th>
+                                <th>Difficulty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixturesBody">
+                            <tr><td colspan="4" style="color:#888; text-align:center;">Select a player</td></tr>
+                        </tbody>
+                    </table>
+                    <p class="small" id="fixturesNote"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FPL_BASE = 'https://fantasy.premierleague.com/api';
+        const positionNames = { '1': 'Goalkeeper', '2': 'Defender', '3': 'Midfielder', '4': 'Forward' };
+
+        let elements = [];
+        let teams = [];
+        let teamsById = {};
+        let selectedPlayerId = null;
+
+        const els = {
+            position: document.getElementById('positionSelect'),
+            team: document.getElementById('teamSelect'),
+            price: document.getElementById('priceSelect'),
+            sort: document.getElementById('sortSelect'),
+            status: document.getElementById('status'),
+            sourceNote: document.getElementById('sourceNote'),
+            playersBody: document.getElementById('playersBody'),
+            resultsInfo: document.getElementById('resultsInfo'),
+            detailCard: document.getElementById('detailCard'),
+            playerName: document.getElementById('playerName'),
+            playerMeta: document.getElementById('playerMeta'),
+            fixturesBody: document.getElementById('fixturesBody'),
+            fixturesNote: document.getElementById('fixturesNote'),
+            stat: {
+                total: document.getElementById('stat-total'),
+                cs: document.getElementById('stat-cs'),
+                defcon: document.getElementById('stat-defcon'),
+                assists: document.getElementById('stat-assists'),
+                goals: document.getElementById('stat-goals'),
+                bonus: document.getElementById('stat-bonus'),
+                season: document.getElementById('stat-season'),
+                price: document.getElementById('stat-price')
+            }
+        };
+
+        function getFetchUrls(path) {
+            const cleanPath = path.startsWith('/') ? path : '/' + path;
+            const target = FPL_BASE + cleanPath;
+            const urls = [];
+            if (location.protocol === 'http:' || location.protocol === 'https:') {
+                urls.push('/api' + cleanPath);
+            }
+            // If page is served from another local dev server (e.g. Live Server :5500),
+            // try the local Node proxy server ports as well.
+            urls.push('http://localhost:3000/api' + cleanPath);
+            urls.push('http://127.0.0.1:3000/api' + cleanPath);
+            urls.push(target);
+            urls.push('https://corsproxy.io/?url=' + encodeURIComponent(target));
+            urls.push('https://api.allorigins.win/raw?url=' + encodeURIComponent(target));
+            return urls;
+        }
+
+        async function fetchJson(path) {
+            const urls = getFetchUrls(path);
+            let lastErr = null;
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const text = await res.text();
+                    return JSON.parse(text);
+                } catch (err) {
+                    lastErr = err;
+                }
+            }
+            throw lastErr || new Error('Failed to fetch data');
+        }
+
+        function setStatus(msg, type = '') {
+            els.status.textContent = msg;
+            els.status.className = 'status ' + (type || '');
+        }
+
+        function priceValue(p) { return (Number(p.now_cost) || 0) / 10; }
+        function formatPrice(p) { return '£' + priceValue(p).toFixed(1) + 'm'; }
+        function defConValue(p) { return Number(p.defensive_contribution) || 0; }
+
+        function populateTeams() {
+            const prev = els.team.value || 'all';
+            els.team.innerHTML = '<option value="all">All</option>';
+            const sorted = [...teams].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            for (const t of sorted) {
+                const opt = document.createElement('option');
+                opt.value = String(t.id);
+                opt.textContent = t.name;
+                els.team.appendChild(opt);
+            }
+            if ([...els.team.options].some(o => o.value === prev)) els.team.value = prev;
+        }
+
+        function matchesPrice(p) {
+            const v = els.price.value;
+            if (v === 'all') return true;
+            const [minStr, maxStr] = v.split('-');
+            const min = parseFloat(minStr);
+            const max = parseFloat(maxStr);
+            const pv = priceValue(p);
+            return pv >= min && pv <= max;
+        }
+
+        function getFilteredPlayers() {
+            const pos = els.position.value;
+            const team = els.team.value;
+            let list = elements.filter(p => {
+                if (pos !== 'all' && String(p.element_type) !== pos) return false;
+                if (team !== 'all' && String(p.team) !== team) return false;
+                if (!matchesPrice(p)) return false;
+                return true;
+            });
+
+            const sort = els.sort.value;
+            list.sort((a, b) => {
+                switch (sort) {
+                    case 'points_desc': return (b.total_points || 0) - (a.total_points || 0);
+                    case 'cs_desc': return (b.clean_sheets || 0) - (a.clean_sheets || 0);
+                    case 'defcon_desc': return defConValue(b) - defConValue(a);
+                    case 'assists_desc': return (b.assists || 0) - (a.assists || 0);
+                    case 'goals_desc': return (b.goals_scored || 0) - (a.goals_scored || 0);
+                    case 'bonus_desc': return (b.bonus || 0) - (a.bonus || 0);
+                    case 'price_asc': return priceValue(a) - priceValue(b);
+                    case 'price_desc': return priceValue(b) - priceValue(a);
+                    default: return (b.total_points || 0) - (a.total_points || 0);
+                }
+            });
+            return list;
+        }
+
+        function renderPlayersList() {
+            const list = getFilteredPlayers();
+            els.resultsInfo.textContent = `${list.length} player(s) found`;
+
+            if (list.length === 0) {
+                els.playersBody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#888;">No players match the selected filters</td></tr>';
+                return;
+            }
+
+            const rows = list.map(p => {
+                const team = teamsById[p.team];
+                const pos = positionNames[String(p.element_type)] || '-';
+                const fullName = [p.first_name, p.second_name].filter(Boolean).join(' ');
+                const selected = String(p.id) === String(selectedPlayerId) ? 'selected-row' : '';
+                return `<tr class="clickable ${selected}" data-id="${p.id}">
+                    <td>${p.web_name}${fullName ? `<div class="small">${fullName}</div>` : ''}</td>
+                    <td>${team ? team.name : '-'}</td>
+                    <td>${pos}</td>
+                    <td>${formatPrice(p)}</td>
+                    <td>${p.total_points ?? 0}</td>
+                    <td>${p.clean_sheets ?? 0}</td>
+                    <td>${defConValue(p)}</td>
+                    <td>${p.assists ?? 0}</td>
+                    <td>${p.goals_scored ?? 0}</td>
+                    <td>${p.bonus ?? 0}</td>
+                </tr>`;
+            }).join('');
+
+            els.playersBody.innerHTML = rows;
+            els.playersBody.querySelectorAll('tr[data-id]').forEach(tr => {
+                tr.addEventListener('click', () => selectPlayer(tr.getAttribute('data-id')));
+            });
+        }
+
+        function renderPlayerStats(player) {
+            const team = teamsById[player.team];
+            const pos = positionNames[String(player.element_type)] || 'Unknown';
+            els.playerName.textContent = (player.web_name || '-') + (player.first_name || player.second_name ? ' (' + [player.first_name, player.second_name].filter(Boolean).join(' ') + ')' : '');
+            els.playerMeta.textContent = `${team ? team.name : 'Unknown Team'} • ${pos} • ${formatPrice(player)}`;
+            els.stat.total.textContent = player.total_points ?? 0;
+            els.stat.cs.textContent = player.clean_sheets ?? 0;
+            els.stat.defcon.textContent = defConValue(player);
+            els.stat.assists.textContent = player.assists ?? 0;
+            els.stat.goals.textContent = player.goals_scored ?? 0;
+            els.stat.bonus.textContent = player.bonus ?? 0;
+            els.stat.season.textContent = player.total_points ?? 0;
+            els.stat.price.textContent = formatPrice(player);
+        }
+
+        function renderFixtures(fixtures) {
+            const upcoming = (Array.isArray(fixtures) ? fixtures : [])
+                .filter(f => !f.finished)
+                .sort((a, b) => (a.event ?? a.round ?? 999) - (b.event ?? b.round ?? 999))
+                .slice(0, 6);
+
+            if (upcoming.length === 0) {
+                els.fixturesBody.innerHTML = '<tr><td colspan="4" style="color:#888; text-align:center;">No upcoming fixtures</td></tr>';
+                return;
+            }
+
+            els.fixturesBody.innerHTML = upcoming.map(f => {
+                const gw = f.event ?? f.round ?? '-';
+                const isHome = !!f.is_home;
+                const oppId = isHome ? f.team_a : f.team_h;
+                const opp = teamsById[oppId];
+                const oppName = opp ? opp.name : ('Team ' + oppId);
+                const venue = isHome ? 'Home' : 'Away';
+                const diff = f.difficulty ?? '-';
+                return `<tr>
+                    <td>GW ${gw}</td>
+                    <td>${oppName}</td>
+                    <td>${venue}</td>
+                    <td><span class="badge diff-${diff}">${diff}</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function selectPlayer(playerId) {
+            selectedPlayerId = String(playerId);
+            const player = elements.find(p => String(p.id) === selectedPlayerId);
+            if (!player) return;
+            renderPlayersList();
+            els.detailCard.classList.remove('hidden');
+            renderPlayerStats(player);
+            els.fixturesBody.innerHTML = '<tr><td colspan="4" style="color:#888; text-align:center;">Loading fixtures...</td></tr>';
+            els.fixturesNote.textContent = '';
+            try {
+                const summary = await fetchJson('/element-summary/' + playerId + '/');
+                renderFixtures(summary.fixtures || []);
+                setStatus('Player details loaded.', 'success');
+            } catch (err) {
+                console.error(err);
+                els.fixturesBody.innerHTML = '<tr><td colspan="4" style="color:#ff6b6b; text-align:center;">Failed to load fixtures</td></tr>';
+                els.fixturesNote.textContent = 'Could not fetch fixtures (network/CORS). Season stats above are from bootstrap-static.';
+                setStatus('Showing season stats, but fixtures could not be loaded.', 'error');
+            }
+        }
+
+        function onFiltersChange() {
+            renderPlayersList();
+            const list = getFilteredPlayers();
+            if (selectedPlayerId && !list.some(p => String(p.id) === String(selectedPlayerId))) {
+                selectedPlayerId = null;
+                els.detailCard.classList.add('hidden');
+            }
+        }
+
+        async function init() {
+            try {
+                setStatus('Loading Fantasy Premier League data...', '');
+                const bootstrap = await fetchJson('/bootstrap-static/');
+                elements = Array.isArray(bootstrap.elements) ? bootstrap.elements : [];
+                teams = Array.isArray(bootstrap.teams) ? bootstrap.teams : [];
+                teamsById = {};
+                teams.forEach(t => { teamsById[t.id] = t; });
+
+                populateTeams();
+                renderPlayersList();
+                setStatus('Data loaded. Use filters and sorting to find players.', 'success');
+
+                if (location.protocol === 'http:' || location.protocol === 'https:') {
+                    els.sourceNote.textContent = 'Source: Fantasy Premier League API. If opened via Live Server, keep `node server.js` running so the page can use the local proxy on http://localhost:3000.';
+                } else {
+                    els.sourceNote.textContent = 'Tip: run `node server.js` and open http://localhost:3000/player-stats.html for best reliability.';
+                }
+            } catch (err) {
+                console.error(err);
+                setStatus('Failed to load FPL data. Make sure the local proxy server is running (`node server.js` in the project folder), then refresh this page.', 'error');
+                els.playersBody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#ff6b6b;">Failed to load data</td></tr>';
+                els.resultsInfo.textContent = '-';
+            }
+        }
+
+        els.position.addEventListener('change', onFiltersChange);
+        els.team.addEventListener('change', onFiltersChange);
+        els.price.addEventListener('change', onFiltersChange);
+        els.sort.addEventListener('change', onFiltersChange);
+
+        init();
+    </script>
+</body>
+</html>

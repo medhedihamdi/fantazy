@@ -1,0 +1,9 @@
+{
+  "name": "fantazi-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Fantasy analysis app with local proxy for FPL API",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
